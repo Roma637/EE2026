@@ -27,7 +27,8 @@ module digits(
     output reg [3:0] tenth,
     output reg [3:0] sec,
     output reg [3:0] tensec,
-    output reg [3:0] min
+    output reg [3:0] min,
+    output reg done
     );
     
     parameter REST = 2'b00;
@@ -54,6 +55,7 @@ module digits(
                     sec <= 0;
                     tensec <= 3;
                     min <= 0;
+                    done <= 0;
                 end
                 START: begin
                     //Digit logic for counting down
@@ -102,6 +104,7 @@ module digits(
                         sec <= 0;
                         tensec <= 0;
                         min <= 0;
+                        done <= 1'b1;
                         state <= END;
                     end
                 end
@@ -112,6 +115,7 @@ module digits(
                     sec <= 0;
                     tensec <= 0;
                     min <= 0;
+                    done <= 1'b1;
                     if (reset) begin
                         state <= REST;
                     end

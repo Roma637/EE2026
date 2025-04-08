@@ -1,31 +1,10 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 08.03.2025 23:24:28
-// Design Name: 
-// Module Name: seven_seg_groupID
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-
-module seven_seg_groupID(
+module seven_seg_timer(
     input basys_clk,
     input reset,
     input start,
     output reg [7:0] seg,
-    output reg [3:0] an
+    output reg [3:0] an,
+    output done
     );
     
     parameter ZERO = 7'b1000000;
@@ -40,22 +19,44 @@ module seven_seg_groupID(
     parameter NINE = 7'b0010000;
        
     reg [1:0] digit_select; //Select which anode to light up.
-    
+    reg urgent = 0;
+    reg [25:0] COUNT = 0;    
+        
     wire [3:0] tenth;
     wire [3:0] sec;
     wire [3:0] tensec;
     wire [3:0] min;
 
+    wire clk_1kHz;
     wire clk_2kHz;    
-
+    
+    flexible_clock clk2 (basys_clk, 50_000, clk_1kHz);
     flexible_clock clk1 (basys_clk, 100_000, clk_2kHz);
-    digits digit(basys_clk, start, reset, tenth, sec, tensec, min);
+
+    digits digit(basys_clk, start, reset, tenth, sec, tensec, min, done);
+    
+    always @(posedge clk_1kHz) begin
+        if (tensec < 3) begin
+            urgent <= 1'b1;
+        end
+        else begin
+            urgent <= 1'b0;
+        end
+    end
     
     always @(posedge clk_2kHz) begin
         //Toggle this every 1ms (update every 1ms the display)
         //TODO: Is it possible to make this flash nearer to the end?
-        digit_select <= digit_select + 1; 
+        digit_select <= digit_select + 1;
     end 
+
+    
+//    always @(posedge clk_2kHz) begin
+//        //Toggle this every 1ms (update every 1ms the display)
+//        //TODO: Is it possible to make this flash nearer to the end?
+        
+//        digit_select <= digit_select + 1; 
+//    end 
     
     // Timer logic
     always @(posedge basys_clk) begin
@@ -121,7 +122,6 @@ module seven_seg_groupID(
                 endcase
             end
         endcase
-
     end
     
 endmodule
