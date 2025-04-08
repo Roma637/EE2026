@@ -45,7 +45,7 @@ module top_level(
         .pixel_index(pixel_index)
     );
     
-    draw_map map(
+    draw_station_icons icons(
         .clk(basys_clk),
         .x(x), 
         .y(y), 
