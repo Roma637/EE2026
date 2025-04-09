@@ -2,6 +2,7 @@
 
 module top_level(
     input basys_clk,
+    input [4:0] pb,
     output [7:0] JB
 );
 
@@ -44,12 +45,92 @@ module top_level(
         .y(y), 
         .pixel_index(pixel_index)
     );
-    
-    draw_map map(
-        .clk(basys_clk),
-        .x(x), 
-        .y(y), 
-        .oled_data(oled_data)
+        
+    wire up_pb_signal;
+    debounce up_pb_debounce(
+        .clk(basys_clk), 
+        .btn(pb[1]), 
+        .signal(up_pb_signal)
     );
+    
+    wire down_pb_signal;
+    debounce down_pb_debounce(
+        .clk(basys_clk), 
+        .btn(pb[4]), 
+        .signal(down_pb_signal)
+    );
+    
+    wire left_pb_signal;
+    debounce left_pb_debounce(
+        .clk(basys_clk), 
+        .btn(pb[2]), 
+        .signal(left_pb_signal)
+    );
+    
+    wire right_pb_signal;
+    debounce right_pb_debounce(
+        .clk(basys_clk), 
+        .btn(pb[3]), 
+        .signal(right_pb_signal)
+    );
+    
+//    drawCharacter char(
+//        basys_clk,
+//        x,
+//        y,
+//        0,
+//        0,
+//        up_pb_signal,
+//        down_pb_signal,
+//        left_pb_signal,
+//        right_pb_signal,
+//        oled_data
+//    );    
+    
+//    draw_map map(
+//        .clk(basys_clk),
+//        .x(x), 
+//        .y(y), 
+//        .oled_data(oled_data)
+//    );
+    
+//    wire stove_ready ;
+//    wire stove_done ;
+    reg [11:0] stove_inventory = 12'b0;
+    
+//    always @(posedge basys_clk) begin
+//        if (ctr_pb_signal) begin
+//            stove_ready <= 1;
+//        end
+//        else begin
+//            stove_ready <= 0;
+//        end
+//    end
+
+    wire [15:0] stove_oled;
+    wire [15:0] chop_oled;
+    
+     drawStove stove (
+        basys_clk,
+        up_pb_signal,
+        left_pb_signal,
+        stove_inventory,
+        x,
+        y,
+        stove_oled
+    );
+
+     drawChop chop (
+        basys_clk,
+        down_pb_signal,
+        left_pb_signal,
+        stove_inventory,
+        x,
+        y,
+        chop_oled
+    );
+    
+    assign oled_data = stove_oled | chop_oled ;
+    
                               
 endmodule
