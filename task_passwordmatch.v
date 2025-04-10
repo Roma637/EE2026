@@ -22,82 +22,106 @@
 
 module task_passwordmatch(
     input basys_clk,
-    input [15:0]sw,
-    input btnC, //RESET SIGNAL, change to whatever reset signal.
-    output reg [15:0]led, //Comment out if not used.
-    output reg [3:0]an,
-    output reg [7:0]seg
-    //output done //DONE SIGNAL, uncomment when used.
+    input [7:0]sw,
+    input enable, //start SIGNAL
+    output reg [7:0]led, //leds used for password.
+    output reg [3:0]an = 4'b0, 
+    output reg [7:0]seg = 8'b0,
+    output reg [1:0]isPlaying = 2'b0 //DONE SIGNAL. - 2'b00 playing, 2'b01 lost, 2'b10 won
     );
 
-    //Password combination
-    reg [15:0] first_combi = 16'h1000;
-    reg [15:0] second_combi = 16'h3000;
-    reg [15:0] third_combi = 16'h7000;
-    reg [15:0] final_combi = 16'hF000;
-    
-    // randomnumbergenerator(basys_clk, btnC,number);
+    //Password combination (default fallbacks)
+    reg [7:0] first_combi = 7'b1000;
+    reg [7:0] second_combi = 7'b1100;
+    reg [7:0] third_combi = 7'b1110;
+    reg [7:0] final_combi = 7'b1111;
+    wire [2:0] number_1;
+    wire [2:0] number_2;
+    wire [2:0] number_3;
+    wire [2:0] number_4;
+    wire valid_sequence;
 
+    //LFSR random generator for 4 numbers (frankly, this should never reset)
+    randomnumbergenerator (basys_clk, enable, number_1, number_2, number_3, number_4, valid_sequence);
 
     //Match the switch inputs
     reg [15:0] prev_sw = 16'b0;
-    parameter WAIT = 4'b0001, START = 4'b0, ONEWAIT = 4'b0001,
-        ONECHECK = 4'b0010, TWOWAIT = 4'b0011,
+    parameter WAIT = 4'b0001, START = 4'b0,
+        ONECHECK = 4'b0010, INIITIALISE = 4'b0011,
         TWOCHECK = 4'b0100, THREEWAIT = 4'b0101,
         THREECHECK = 4'b0110, FOURWAIT = 4'b0111,
         FOURCHECK = 4'b1000, FINISH = 4'b1001,
         FAIL = 4'b1011;
 
-    reg [3:0] state = START;
+    reg [3:0] state = WAIT;
     reg blink = 0;
-    wire clk_1Hz;
-    wire clk_1kHz;
+    wire clk_2Hz;
+    wire clk_3Hz;
 
-    flexible_clock flexiclk(basys_clk, 50_000_000, clk_1Hz);
-    flexible_clock flexiclk1(basys_clk, 50_000, clk_1kHz);
+    flexible_clock flexiclk(basys_clk, 25_000_000, clk_2Hz);
+    flexible_clock flexiclk1(basys_clk, 12_500_000, clk_3Hz);
     
 
-    always @(posedge clk_1Hz) begin //LED management
-        blink <= ~blink;
-        case (state)
-            WAIT: begin
-                led <= ~led;
-            end
-            START: begin
-                led <= blink ? first_combi : 16'h0000;  
-            end
-            ONECHECK: begin
-                led <= blink ? second_combi : 16'h0000;  
-            end
-            TWOCHECK: begin
-                led <= blink ? third_combi : 16'h0000;  
-            end
-            THREECHECK: begin
-                led <= blink ? final_combi : 16'h0000;  
-            end
-            FINISH: begin
-                led <= 16'hFFFF;
-            end 
-            FAIL: begin
-                led <= 16'b0;
-            end
-        
-        endcase
+    always @(posedge clk_2Hz or posedge enable) begin //LED management
+        if (!enable) begin
+            led <= 8'b0;
+        end 
+        else begin
+            blink <= ~blink;
+            case (state)
+                WAIT: begin
+                    led <= ~led;
+                end
+                START: begin
+                    led <= blink ? first_combi : 8'b0;  
+                end
+                ONECHECK: begin
+                    led <= blink ? second_combi : 8'b0;  
+                end
+                TWOCHECK: begin
+                    led <= blink ? third_combi : 8'b0;  
+                end
+                THREECHECK: begin
+                    led <= blink ? final_combi : 8'b0;  
+                end
+                FINISH: begin
+                    led <= 8'b11111111;
+                end 
+                FAIL: begin
+                    led <= 8'b0;
+                end
+            endcase
+        end
     end
 
-    always @(posedge clk_1kHz or posedge btnC) begin //States for password checking
-        if (btnC) begin
+    always @(posedge clk_3Hz or posedge enable) begin //States for password checking
+        if (!enable) begin
+            //Off segments when not in use
+            an <= 4'b1111;
+            seg <= 8'h80;
+            isPlaying <= 2'b00; 
             state <= WAIT;
-            // done <= 1'b0;
         end
         else begin
             case (state)
                 WAIT: begin
                     an <= 4'b1111;
-                    if (sw == 16'b0) begin
+                    if (sw == 4'b0) begin
                         prev_sw <= sw;
-                        state <= START;
+                        state <= INIITIALISE;
                     end
+                end
+
+                INIITIALISE: begin
+                    seg <= 8'h80; //display 8 on segmnet
+                    //Reset the passwords here.
+                    // if (valid_sequence) begin
+                        first_combi <= 8'b1 << number_1;
+                        second_combi <= (8'b1 << number_2) | (8'b1 << number_1) ;
+                        third_combi <= (8'b1 << number_3) | (8'b1 << number_2) | (8'b1 << number_1);
+                        final_combi <= (8'b1 << number_4) | (8'b1 << number_3) | (8'b1 << number_2) | (8'b1 << number_1); 
+                        state <= START;
+                    // end
                 end
 
                 START: begin
@@ -142,7 +166,7 @@ module task_passwordmatch(
                         prev_sw <= sw;
                         if (sw == final_combi) begin
                             state <= FINISH;
-//                            done <= 1'b1;
+                            isPlaying <= 2'b10; //WON
                         end else begin
                             state <= FAIL;
                         end
@@ -151,13 +175,14 @@ module task_passwordmatch(
 
                 FINISH: begin
                     an <= 4'b0000;
-                    seg <= 7'b1110111;
-                    // done <= 1'b1;
+                    seg <= 8'h80;
+                    isPlaying <= 2'b10; //WON
                 end
 
                 FAIL: begin
-                    an <= 4'b1010;
-                    seg <= 7'b0;
+                    an <= 4'b0000;
+                    seg <= 8'b11000111;
+                    isPlaying <= 2'b01; 
                 end
                 default: begin
                     state <= WAIT; //Failsafe restart to normal
