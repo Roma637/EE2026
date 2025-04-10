@@ -25,11 +25,12 @@ module draw_boiler #(
     parameter [6:0] BOILER_TOP_LEFT_Y = 0
 )(
     input clk,
-    input stove_ready,
+    input start_boil,
     input reset,
     input [11:0] stove_inventory,
     input [6:0] x,
     input [6:0] y,
+    output reg done,
     output reg [15:0] oled_data
     );
     
@@ -2575,7 +2576,7 @@ module draw_boiler #(
     
         case (state)
             IDLE: begin
-                if (stove_ready) begin
+                if (start_boil) begin
                     state <= ANIM1;
                 end
             end
@@ -2603,7 +2604,10 @@ module draw_boiler #(
         y_idx = y - BOILER_TOP_LEFT_Y;
         if (x_idx >= 0 && x_idx < 15 && y_idx >= 0 && y_idx < 15) begin
             case (state)
-                IDLE: oled_data = stove_empty[y_idx][x_idx];
+                IDLE: begin
+                    oled_data = stove_empty[y_idx][x_idx];
+                    done = 0;
+                end
                 ANIM1: oled_data = timing1[y_idx][x_idx];
                 ANIM2: oled_data = timing2[y_idx][x_idx];
                 ANIM3: oled_data = timing3[y_idx][x_idx];
@@ -2613,7 +2617,10 @@ module draw_boiler #(
                 ANIM7: oled_data = timing7[y_idx][x_idx];
                 ANIM8: oled_data = timing8[y_idx][x_idx];
                 ANIM9: oled_data = timing9[y_idx][x_idx];
-                FULL: oled_data = stove_full[y_idx][x_idx];
+                FULL: begin
+                    oled_data = stove_full[y_idx][x_idx];
+                    done = 1;
+                end
                 default: oled_data = stove_empty[y_idx][x_idx];
             endcase
         end else begin

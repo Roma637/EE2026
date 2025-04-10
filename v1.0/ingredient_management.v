@@ -31,6 +31,12 @@ module ingredient_management(
     input isInChopper,
     input isInBoiler,
     input isInServer,
+    input boil_done, // to check if the boiling animation is complete
+    input chop_done,
+    output reg start_boil = 0, // to start the animation
+    output reg start_chop = 0,
+    output reg reset_boil = 0, // to set back to IDLE state
+    output reg reset_chop = 0,
     output [15:0] led
     );
     wire [11:0] after_serving;
@@ -103,13 +109,24 @@ module ingredient_management(
                 inventory <= ONION;
             end
             // pick up from stations
-            else if (inventory == 12'b0 & isInBoiler) begin 
+            // check if in boiler and boiling is done before you can pick up
+            // 
+            else if (inventory == 12'b0 & isInBoiler & boil_done) begin 
+                //picking up
                 inventory <= boiled_ingredient;
-                station_boil = 0;
+                station_boil <= 0;
+                // boiler should be in IDLE state if no ingredient
+                reset_boil <= 1;
+                // should not be animating after picking up
+                start_boil <= 0;
             end
-            else if (inventory == 12'b0 & isInChopper) begin 
+            else if (inventory == 12'b0 & isInChopper & chop_done) begin 
                 inventory <= chopped_ingredient;
                 station_chop <= 0;
+                // chopper should be in IDLE state if no ingredient
+                reset_chop <= 1;
+                // should not be animating after picking up
+                start_chop <= 0;
             end
             else if (inventory == 12'b0 & isInServer) begin 
                 inventory <= station_serve;
@@ -121,10 +138,18 @@ module ingredient_management(
             if (btnC_pulse & station_boil==12'b0 & isInBoiler) begin 
                 station_boil <= inventory;
                 inventory <= 0;
+                // for now start animation immediately upon putting in boil
+                start_boil <= 1;
+                // stop reset when boiling starts
+                reset_boil <= 0;
             end
             else if (btnC_pulse & station_chop==12'b0 & isInChopper) begin 
                 station_chop <= inventory;
                 inventory <= 0;
+                // for now start animation immediately upon putting in chop
+                start_chop <= 1;
+                // stop reset when chopping starts
+                reset_chop <= 0;
             end
             else if (btnC_pulse & isInServer) begin 
                 station_serve <= inventory | station_serve;

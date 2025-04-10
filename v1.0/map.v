@@ -159,14 +159,11 @@ module map(
     flexible_clock clk1(basys_clk, 1, clk_25MHz);
     
     
-    // each of these wires check if the character is in the zone for the ingredients etc
-    wire isInOnion;
-    wire isInChopper;
-    wire isInTomato;
-    wire isInChicken;
-    wire isInRice;
-    wire isInBoiler;
-    wire isInServer;
+    // wires to check if the character is in the respective zone
+    wire isInOnion, isInChopper, isInTomato, isInChicken, isInRice, isInBoiler, isInServer;
+    
+    // wires for animation of chopping and boiling
+    wire boil_done, chop_done, start_boil, start_chop, reset_boil, reset_chop;
     drawStations station_drawer_inst (
         .basys_clk(basys_clk),
         .x(x),
@@ -182,6 +179,12 @@ module map(
         .isInChopper(isInChopper),
         .isInBoiler(isInBoiler),
         .isInServer(isInServer),
+        .boil_done(boil_done), // to check if the boiling animation is complete
+        .chop_done(chop_done),
+        .start_boil(start_boil), // to start the animation
+        .start_chop(start_chop),
+        .reset_boil(reset_boil), // to set back to IDLE state
+        .reset_chop(reset_chop),
         .oled_data(oled_stations)
     );
     
@@ -196,6 +199,12 @@ module map(
         .isInChopper(isInChopper),
         .isInBoiler(isInBoiler),
         .isInServer(isInServer),
+        .boil_done(boil_done), // to check if the boiling animation is complete
+        .chop_done(chop_done),
+        .start_boil(start_boil), // to start the animation
+        .start_chop(start_chop),
+        .reset_boil(reset_boil), // to set back to IDLE state
+        .reset_chop(reset_chop),
         .led(led)
     );
     

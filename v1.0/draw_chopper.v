@@ -25,10 +25,11 @@ module draw_chopper #(
     parameter [6:0] CHOPPER_TOP_LEFT_Y = 0
 )(
     input clk,
-    input chop_ready,
+    input start_chop,
     input reset,
     input [7:0] x,
     input [6:0] y,
+    output reg done,
     output reg [15:0] oled_data
     );
     
@@ -2590,7 +2591,7 @@ module draw_chopper #(
     
         case (state)
             IDLE: begin
-                if (chop_ready) begin
+                if (start_chop) begin
                     state <= ANIM1;
                 end
             end
@@ -2620,7 +2621,10 @@ module draw_chopper #(
         
         if (x_idx >= 0 && x_idx < 15 && y_idx >= 0 && y_idx < 15) begin
             case (state)
-                IDLE: oled_data = chop_empty[y_idx][x_idx];
+                IDLE: begin
+                    oled_data = chop_empty[y_idx][x_idx];
+                    done = 0;
+                end
                 ANIM1: oled_data = timing1[y_idx][x_idx];
                 ANIM2: oled_data = timing2[y_idx][x_idx];
                 ANIM3: oled_data = timing3[y_idx][x_idx];
@@ -2630,7 +2634,10 @@ module draw_chopper #(
                 ANIM7: oled_data = timing7[y_idx][x_idx];
                 ANIM8: oled_data = timing8[y_idx][x_idx];
                 ANIM9: oled_data = timing9[y_idx][x_idx];
-                FULL: oled_data = chop_full[y_idx][x_idx];
+                FULL: begin
+                    oled_data = chop_full[y_idx][x_idx];
+                    done = 1;
+                end
                 default: oled_data = chop_empty[y_idx][x_idx];
             endcase
         end else begin

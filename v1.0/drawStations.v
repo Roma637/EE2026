@@ -24,6 +24,10 @@ module drawStations(
     input basys_clk,
     input [6:0] x, y,
     input [6:0] character_y_top, character_y_bot, character_x_left, character_x_right,
+    input start_boil, // to start the animation
+    input start_chop,
+    input reset_boil, // to set back to IDLE state
+    input reset_chop,
     output isInOnion,
     output isInRice,
     output isInTomato,
@@ -31,6 +35,8 @@ module drawStations(
     output isInChopper,
     output isInBoiler,
     output isInServer,
+    output boil_done, // to check if the boiling animation is complete
+    output chop_done,
     output [15:0] oled_data
     );
     wire [15:0] oled_onion, oled_chop, oled_rice,
@@ -76,17 +82,18 @@ module drawStations(
         .y(y),
         .oled_data(oled_ingredients)
     );
-    // stove_ready / chop_ready is to start the animation
-    reg reset = 0;
+
+
     draw_boiler #(
         .BOILER_TOP_LEFT_X(BOILER_TOP_LEFT_X),
         .BOILER_TOP_LEFT_Y(BOILER_TOP_LEFT_Y)
     ) draw_boiler0 (
         .clk(basys_clk),
-        .stove_ready(1),
-        .reset(reset),
+        .start_boil(start_boil),
+        .reset(reset_boil),
         .x(x),
         .y(y),
+        .done(boil_done),
         .oled_data(oled_boil)
         );
         
@@ -95,10 +102,11 @@ module drawStations(
         .CHOPPER_TOP_LEFT_Y(CHOPPER_TOP_LEFT_Y)
     ) draw_chopper0 (
         .clk(basys_clk),
-        .chop_ready(1),
-        .reset(reset),
+        .start_chop(start_chop),
+        .reset(reset_chop),
         .x(x),
         .y(y),
+        .done(chop_done),
         .oled_data(oled_chop)
     );
     
