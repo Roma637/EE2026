@@ -89,7 +89,8 @@ module minigame_slot_machine(
         input [3:0] sw,
         output [3:0] an,
         output reg [7:0] seg,
-        output [15:0] led
+        output [3:0] led,
+        output game_complete
 );
 
     reg [2:0] correct_3 = 3'd1;
@@ -97,8 +98,8 @@ module minigame_slot_machine(
     reg [2:0] correct_1 = 3'd5;
     reg [2:0] correct_0 = 3'd2;
     
-    reg [2:0] initial_0 = 3'd1;
-    reg [2:0] initial_1 = 3'd5;
+    reg [2:0] initial_0 = 3'd5;
+    reg [2:0] initial_1 = 3'd1;
     reg [2:0] initial_2 = 3'd6;
     reg [2:0] initial_3 = 3'd3;
     
@@ -151,6 +152,8 @@ module minigame_slot_machine(
 
     reg [3:0] an_state = 4'b1110;
     assign an = an_state;
+    
+    assign game_complete = (led==4'b1111);
     
     wire clk_500Hz;
     flexible_clock anode_clk (basys_clk, 100_000, clk_500Hz);
