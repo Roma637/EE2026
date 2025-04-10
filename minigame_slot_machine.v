@@ -97,8 +97,8 @@ module minigame_slot_machine(
     reg [2:0] correct_1 = 3'd5;
     reg [2:0] correct_0 = 3'd2;
     
-    reg [2:0] initial_0 = 3'd5;
-    reg [2:0] initial_1 = 3'd1;
+    reg [2:0] initial_0 = 3'd1;
+    reg [2:0] initial_1 = 3'd5;
     reg [2:0] initial_2 = 3'd6;
     reg [2:0] initial_3 = 3'd3;
     
