@@ -121,16 +121,17 @@ module map(
 //        .oled_data(oled_character)
 //        );
     
+    // recalculate the top y and left x bounds from the collision center for drawing
     draw_character character_drawer_inst (
         .basys_clk(basys_clk),
         .x(x),
         .y(y),
+        .character_x(character_center_x - 4),
+        .character_y(character_center_y - 5),
         .btnU(btnU),
         .btnD(btnD),
         .btnL(btnL),
         .btnR(btnR),
-        .character_x(character_x_left),
-        .character_y(character_y_top),
         .oled_data(oled_character)
     );
     
@@ -203,7 +204,7 @@ module map(
     seven_seg_timer timer0 (basys_clk, reset, seg, an, done);
     
     wire [15:0] map;
-    assign map = oled_character | oled_map;
+    assign map = oled_character ? oled_character : oled_map;
     assign oled_data = map ? map :
     oled_stations ? oled_stations :
     16'b0; 

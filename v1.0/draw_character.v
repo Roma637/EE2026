@@ -44,6 +44,10 @@ module draw_character(
     
     dir = 2'b0;
     
+    // char_up[y][x], somehow the y and x is inverted
+    // however, the eyes cannot be completely black as they will take the value of the background
+    // so we have to set it to a value that is closest to black but not 0
+    // the eyes are indicated by comments
     char_up[0][0] = 16'b00000_000000_00000;
     char_up[0][1] = 16'b11111_111111_11111;
     char_up[0][2] = 16'b11111_111111_11111;
@@ -167,10 +171,10 @@ module draw_character(
     char_down[4][7] = 16'b00000_000000_00000;
     char_down[5][0] = 16'b00000_000000_00000;
     char_down[5][1] = 16'b11110_101110_00111;
-    char_down[5][2] = 16'b00000_000000_00000;
+    char_down[5][2] = 16'b00000_000001_00000; // here
     char_down[5][3] = 16'b11110_101110_00111;
     char_down[5][4] = 16'b11110_101110_00111;
-    char_down[5][5] = 16'b00000_000000_00000;
+    char_down[5][5] = 16'b00000_000001_00000; // here
     char_down[5][6] = 16'b11110_101110_00111;
     char_down[5][7] = 16'b00000_000000_00000;
     char_down[6][0] = 16'b00000_000000_00000;
@@ -248,9 +252,9 @@ module draw_character(
     char_left[4][6] = 16'b11111_111111_11111;
     char_left[4][7] = 16'b00000_000000_00000;
     char_left[5][0] = 16'b00000_000000_00000;
-    char_left[5][1] = 16'b00000_000000_00000;
+    char_left[5][1] = 16'b00000_000001_00000; // here
     char_left[5][2] = 16'b11110_101110_00111;
-    char_left[5][3] = 16'b00000_000000_00000;
+    char_left[5][3] = 16'b00000_000001_00000; // here
     char_left[5][4] = 16'b11110_101110_00111;
     char_left[5][5] = 16'b11110_101110_00111;
     char_left[5][6] = 16'b11110_101110_00111;
@@ -333,9 +337,9 @@ module draw_character(
     char_right[5][1] = 16'b11110_101110_00111;
     char_right[5][2] = 16'b11110_101110_00111;
     char_right[5][3] = 16'b11110_101110_00111;
-    char_right[5][4] = 16'b00000_000000_00000;
+    char_right[5][4] = 16'b00000_000001_00000; // here
     char_right[5][5] = 16'b11110_101110_00111;
-    char_right[5][6] = 16'b00000_000000_00000;
+    char_right[5][6] = 16'b00000_000001_00000; // here
     char_right[5][7] = 16'b00000_000000_00000;
     char_right[6][0] = 16'b00000_000000_00000;
     char_right[6][1] = 16'b11110_101110_00111;
@@ -387,18 +391,38 @@ module draw_character(
             dir <= 2'b11;
         end
         
-        if (x >= character_x && x < 8 + character_x && y >= character_y && y < 10 + character_y) begin
-            case (dir)
-                2'b00: oled_data <= char_up[y - character_y][x - character_x];
-                2'b01: oled_data <= char_down[y - character_y][x - character_x];
-                2'b10: oled_data <= char_left[y - character_y][x - character_x];
-                2'b11: oled_data <= char_right[y - character_y][x - character_x];
-            endcase
-        end
-        else begin
-            oled_data <= 16'b0;
-        end
+//        if (x >= character_x && x < 8 + character_x && y >= character_y && y < 10 + character_y) begin
+//            case (dir)
+//                2'b00: oled_data <= char_up[y - character_y][x - character_x];
+//                2'b01: oled_data <= char_down[y - character_y][x - character_x];
+//                2'b10: oled_data <= char_left[y - character_y][x - character_x];
+//                2'b11: oled_data <= char_right[y - character_y][x - character_x];
+//            endcase
+//        end
+//        else begin
+//            oled_data <= 16'b0;
+//        end
         
     end
+    
+    reg [6:0] sprite_x, sprite_y;
+    always @(*) begin
+        sprite_x = x - character_x;
+        sprite_y = y - character_y;
+        // character_x and character_y may be negative
+        // this allows the rendering of the rest of the character that is still in the frame
+        // regs cannot be negative since it will overflow
+        if (sprite_x < 8 && sprite_y < 10) begin  // Implicitly checks sprite_x, sprite_y >= 0
+            case (dir)
+                2'b00: oled_data = char_up[sprite_y][sprite_x];
+                2'b01: oled_data = char_down[sprite_y][sprite_x];
+                2'b10: oled_data = char_left[sprite_y][sprite_x];
+                2'b11: oled_data = char_right[sprite_y][sprite_x];
+            endcase
+        end else begin
+            oled_data = 16'b0;
+        end
+    end
+
     
 endmodule

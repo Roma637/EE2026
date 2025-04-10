@@ -40,8 +40,9 @@ module movementController #(
     input btnD,
     input btnL,
     input btnR,
-    output reg [6:0] character_center_x = CHARACTER_WIDTH/2,
-    output reg [6:0] character_center_y = 4 + CHARACTER_WIDTH/2,
+    output reg [6:0] character_center_x = 4,
+    output reg [6:0] character_center_y = 5,
+    // this defines the collision boundaries for the character
     output reg [6:0] character_y_top, character_y_bot, character_x_left, character_x_right
 );    
     reg [3:0] state = 0;
@@ -54,10 +55,12 @@ module movementController #(
     
     always @(posedge clk_60Hz) begin
         // Compute character boundaries
-        character_y_top = character_center_y - CHARACTER_WIDTH / 2;
-        character_y_bot = character_center_y + CHARACTER_WIDTH / 2;
-        character_x_left = character_center_x - CHARACTER_WIDTH / 2;
-        character_x_right = character_center_x + CHARACTER_WIDTH / 2;
+        // calculated based on character center at x = 4, y = 5 for the character sprite
+        // rectangular body 6 by 10
+        character_y_top = character_center_y - 5;
+        character_y_bot = character_center_y + 4;
+        character_x_left = character_center_x - 3;
+        character_x_right = character_center_x + 2;
 
         // Check if character is inside a gap
         is_in_left_gap = (character_x_left > LEFT_GAP_LEFT && character_x_right < LEFT_GAP_RIGHT) &&

@@ -213,7 +213,7 @@ module hasOnion(
     end
 endmodule
 
-// module checks if character is in the onion station range
+// module checks if character is in the station range
 // returns inStation which is 1 if in, or 0 when outside
 module checkInStation #(
     parameter LENGTH = 0,
@@ -224,13 +224,22 @@ module checkInStation #(
     input [6:0] character_y_top, character_y_bot, character_x_left, character_x_right,
     output reg isInStation
     );
-    reg [6:0] left_x = TOP_LEFT_X;
-    reg [6:0] right_x = TOP_LEFT_X + LENGTH - 1;
-    reg [6:0] top_y = TOP_LEFT_Y;
-    reg [6:0] bot_y = TOP_LEFT_Y + WIDTH - 1;
+    reg [6:0] station_left_x = TOP_LEFT_X;
+    reg [6:0] station_right_x = TOP_LEFT_X + LENGTH - 1;
+    reg [6:0] station_top_y = TOP_LEFT_Y;
+    reg [6:0] station_bot_y = TOP_LEFT_Y + WIDTH - 1;
+    
+    // calculate smaller boundary for logic detection
+    // to make it easier to be considered in the zone
+    // x = 6, y = 5 so 6 by 5 detection zone
+    wire [6:0] detect_y_top = character_y_top + 4;
+    wire [6:0] detect_y_bot = character_y_bot - 1;
+    wire [6:0] detect_x_left = character_x_left;
+    wire [6:0] detect_x_right = character_x_right;
+    
     always @ (*) begin
-        if (character_x_left >= left_x && character_x_right <= right_x
-        && character_y_top >= top_y && character_y_bot <= bot_y) begin
+        if (detect_x_left >= station_left_x && detect_x_right <= station_right_x
+        && detect_y_top >= station_top_y && detect_y_bot <= station_bot_y) begin
             isInStation = 1;
         end else begin
             isInStation = 0;

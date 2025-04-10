@@ -45,35 +45,35 @@ Oled_Display oled_unit_A (.clk(clk_6p25MHz),
                           .vccen(JB[6]),
                           .pmoden(JB[7]));
 
-//wire [15:0] oled_map, oled_starting_screen;
-//map map0 (
-//    .basys_clk(basys_clk),
-//    .pixel_index(pixel_index),
-//    .sw(sw),
-//    .btnC(btnC),
-//    .btnU(btnU),
-//    .btnD(btnD),
-//    .btnL(btnL),
-//    .btnR(btnR),
-//    .seg(seg),
-//    .an(an),
-//    .led(led),
-//    .oled_data(oled_map)
-//);
+wire [15:0] oled_map, oled_starting_screen;
+map map0 (
+    .basys_clk(basys_clk),
+    .pixel_index(pixel_index),
+    .sw(sw),
+    .btnC(btnC),
+    .btnU(btnU),
+    .btnD(btnD),
+    .btnL(btnL),
+    .btnR(btnR),
+    .seg(seg),
+    .an(an),
+    .led(led),
+    .oled_data(oled_map)
+);
 
-//starting_screen(
-//    basys_clk,
-//    pixel_index,
-//    oled_starting_screen
-//);
+starting_screen(
+    basys_clk,
+    pixel_index,
+    oled_starting_screen
+);
 
-//wire clk_10Hz;
-//flexible_clock clk1 (basys_clk, 5_000_000, clk_10Hz);
+wire clk_10Hz;
+flexible_clock clk1 (basys_clk, 5_000_000, clk_10Hz);
 
-//wire btnC_pressed;
-//// to debounce and hold the state, can expand later to include end screen state
-//debounce_and_hold db0 (clk_10Hz, btnC, btnC_pressed);
-//assign oled_data = btnC_pressed ? oled_map : oled_starting_screen;
+wire btnC_pressed;
+// to debounce and hold the state, can expand later to include end screen state
+debounce_and_hold db0 (clk_10Hz, btnC, btnC_pressed);
+assign oled_data = btnC_pressed ? oled_map : oled_starting_screen;
 
 
 // draw character test ====================================================
