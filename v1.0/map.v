@@ -29,10 +29,12 @@ module map(
     input btnL,
     input btnR,
     input btnC,
+    input start_game, // like the reset for this module
     output [7:0] seg, 
     output [3:0] an,
     output [15:0] led,
-    output [15:0] oled_data
+    output [15:0] oled_data,
+    output [11:0] inventory
     );
     
     wire [6:0] x;
@@ -111,16 +113,6 @@ module map(
         .character_x_right(character_x_right)
     );
     
-//    drawCharacter character_drawer_inst (
-//        .basys_clk(basys_clk),
-//        .pixel_index(pixel_index),
-//        .character_x_left(character_x_left), 
-//        .character_x_right(character_x_right), 
-//        .character_y_top(character_y_top), 
-//        .character_y_bot(character_y_bot),
-//        .oled_data(oled_character)
-//        );
-    
     // recalculate the top y and left x bounds from the collision center for drawing
     draw_character character_drawer_inst (
         .basys_clk(basys_clk),
@@ -164,6 +156,7 @@ module map(
     
     // wires for animation of chopping and boiling
     wire boil_done, chop_done, start_boil, start_chop, reset_boil, reset_chop;
+    wire [11:0] server_inventory;
     drawStations station_drawer_inst (
         .basys_clk(basys_clk),
         .x(x),
@@ -172,6 +165,7 @@ module map(
         .character_x_right(character_x_right), 
         .character_y_top(character_y_top), 
         .character_y_bot(character_y_bot),
+        .server_inventory(server_inventory),
         .isInOnion(isInOnion),
         .isInTomato(isInTomato),
         .isInChicken(isInChicken),
@@ -188,6 +182,10 @@ module map(
         .oled_data(oled_stations)
     );
     
+    wire [7:0] seg_tasks;
+    wire [3:0] an_tasks;
+    wire reset_task_password_match;
+    wire reset_task_slot_machine;
     ingredient_management ingredient_management (
         .basys_clk(basys_clk),
         .sw(sw),
@@ -205,12 +203,24 @@ module map(
         .start_chop(start_chop),
         .reset_boil(reset_boil), // to set back to IDLE state
         .reset_chop(reset_chop),
-        .led(led)
+        .station_serve(server_inventory),
+        .reset_task_password_match(reset_task_password_match),
+        .reset_task_slot_machine(reset_task_slot_machine),
+        .seg(seg_tasks),
+        .an(an_tasks),
+        .led(led),
+        .inventory(inventory)
     );
     
     wire done;
-    reg reset = 0;
-    seven_seg_timer timer0 (basys_clk, reset, seg, an, done);
+    // if game not started, we keep resetting
+    wire [7:0] seg_timer;
+    wire [3:0] an_timer;
+    seven_seg_timer timer0 (basys_clk, !start_game, seg_timer, an_timer, done);
+    
+    // if there are tasks going on, then switch to the seg and an for tasks
+    assign seg = (reset_task_password_match && reset_task_slot_machine) ? seg_timer : seg_tasks;
+    assign an = (reset_task_password_match && reset_task_slot_machine) ? an_timer : an_tasks;
     
     wire [15:0] map;
     assign map = oled_character ? oled_character : oled_map;

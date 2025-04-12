@@ -37,11 +37,16 @@ module ingredient_management(
     output reg start_chop = 0,
     output reg reset_boil = 0, // to set back to IDLE state
     output reg reset_chop = 0,
-    output [15:0] led
+    output reg [11:0] station_serve = 0,
+    output reg reset_task_password_match = 1, // for muxxing the seg outside
+    output reg reset_task_slot_machine = 1,
+    output reg [7:0] seg, // for the tasks
+    output reg [3:0] an,
+    output reg [15:0] led,
+    output reg [11:0] inventory
     );
     wire [11:0] after_serving;
-    reg [11:0] inventory = 12'b0;
-    assign led[11:0] = inventory ; //debug purposes
+    //assign led[11:0] = inventory ; //debug purposes
     
     parameter [11:0] CHICKEN = 12'b100_000_000_000;
     parameter [11:0] TOMATO = 12'b000_100_000_000;
@@ -50,7 +55,6 @@ module ingredient_management(
     
     reg [11:0] station_boil = 12'b0; 
     reg [11:0] station_chop = 12'b0;
-    reg [11:0] station_serve = 12'b0;
     
     wire clk_10Hz;
     flexible_clock clk0 (basys_clk, 5_000_000, clk_10Hz);
@@ -70,24 +74,78 @@ module ingredient_management(
     wire [11:0] chopped_ingredient;
     chopper chopper0 (.ingredient(station_chop), .chopped_ingredient(chopped_ingredient));
     
+    wire [1:0] isPlaying;
+    wire [7:0] seg_task_password_match;
+    wire [3:0] an_task_password_match;
+    wire [7:0] led_task_password_match;
+    task_password_match task0(
+        .basys_clk(basys_clk),
+        .sw(sw[15:8]),
+        .enable(!reset_task_password_match), // flip since we want reset instead of enable
+        .led(led_task_password_match), //leds used for password.
+        .an(an_task_password_match), 
+        .seg(seg_task_password_match),
+        .isPlaying(isPlaying) //DONE SIGNAL. - 2'b00 playing, 2'b01 lost, 2'b10 won
+        );
+        
+    wire task_slot_machine_end;
+    wire [7:0] seg_task_slot_machine;
+    wire [3:0] an_task_slot_machine;
+    wire [3:0] led_task_slot_machine;
+    task_slot_machine task1(
+            .basys_clk(basys_clk),
+            .reset(reset_task_slot_machine),
+            .sw(sw[13:10]),
+            .an(an_task_slot_machine),
+            .seg(seg_task_slot_machine),
+            .led(led_task_slot_machine),
+            .game_complete(task_slot_machine_end)
+    );
+    
+    
+        
+//    assign seg = reset_task_password_match ? 8'b1111_1111 : seg_task_password_match;
+//    assign an = reset_task_password_match ? 4'b1111 : an_task_password_match;
     
     wire [1:0] orders_done;
     wire served;
-    assign led[15:14] = orders_done;
+    //assign led[15:14] = orders_done;
     wire [11:0] order1 = 12'b100_100_000_000;
     wire [11:0] order2 = 12'b000_000_100_100;
     wire [11:0] order3 = 12'b100_000_001_001;
     server server0 (clk_10Hz, 0, order1, order2, order3, station_serve, after_serving, orders_done, served);
     
+    //assign led = reset_task_password_match ? {orders_done, 2'b00, inventory} : {led_task_password_match, 8'b0};
+    
+    // mux to switch seg and led between tasks
+    always @(*) begin
+        // no task in progress
+        if (reset_task_password_match && reset_task_slot_machine) begin
+            seg = 8'b1111_1111;
+            an = 4'b1111;
+            led = {orders_done, 2'b00, inventory};
+        end 
+        else if (!reset_task_password_match) begin
+            seg = seg_task_password_match;
+            an = an_task_password_match;
+            led = {led_task_password_match, 8'b0};
+        end
+        else if (!reset_task_slot_machine) begin
+            seg = seg_task_slot_machine;
+            an = an_task_slot_machine;
+            led = {2'b0, led_task_slot_machine, 10'b0};
+        end
+    end
     always @(*) begin
         pickUp = (inventory == 0) ? 1 : 0;
     end
     
     always @ (posedge clk_10Hz) begin
-        // sw[15] -- pick up
-        // sw[14] -- put down
         // sw[13] -- discard
-        // up = drop what's in inventory
+        // drop what's in inventory
+        
+        // currently the switch is colliding with the task password match
+        // can change to center button instead
         if (sw[13]) begin 
             inventory <= 12'b0;
         end
@@ -138,23 +196,57 @@ module ingredient_management(
             if (btnC_pulse & station_boil==12'b0 & isInBoiler) begin 
                 station_boil <= inventory;
                 inventory <= 0;
-                // for now start animation immediately upon putting in boil
-                start_boil <= 1;
-                // stop reset when boiling starts
-                reset_boil <= 0;
+                
+                // start the task
+                reset_task_password_match <= 0;
+                
             end
             else if (btnC_pulse & station_chop==12'b0 & isInChopper) begin 
                 station_chop <= inventory;
                 inventory <= 0;
-                // for now start animation immediately upon putting in chop
-                start_chop <= 1;
-                // stop reset when chopping starts
-                reset_chop <= 0;
+                
+                // start the task
+                reset_task_slot_machine <= 0;
             end
             else if (btnC_pulse & isInServer) begin 
                 station_serve <= inventory | station_serve;
                 inventory <= 0;
             end
+        end
+        
+        // task password manager logic
+        // if chracter runs out of zone when task is not completed or if lost, we delete the ingredient from boiler
+        // as character is considered to have "failed" boiling the ingredient
+        if ((!start_boil && !isInBoiler) || isPlaying == 2'b01) begin
+            station_boil <= 0;
+            // stop the task once u get results
+            reset_task_password_match <= 1;
+        end
+        else if (isPlaying == 2'b10) begin //if won, we start animation for boiler
+            start_boil <= 1;
+            // stop reset when boiling starts
+            reset_boil <= 0;
+            // stop the task once u get results
+            reset_task_password_match <= 1;
+        end
+        
+        
+        // task slot machine logic
+        // completed task slot machine
+        if (task_slot_machine_end) begin
+            // start animation for chop
+            start_chop <= 1;
+            // stop reset when chopping starts
+            reset_chop <= 0;
+            // stop task
+            reset_task_slot_machine <= 1;
+        end
+        // if character runs out of zone when task is not done, then chopping has "failed"
+        else if (!start_chop && !isInChopper) begin
+            // destroy ingredient
+            station_chop <= 0;
+            // stop task
+            reset_task_slot_machine <= 1;
         end
     end
 

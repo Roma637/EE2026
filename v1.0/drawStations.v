@@ -24,6 +24,7 @@ module drawStations(
     input basys_clk,
     input [6:0] x, y,
     input [6:0] character_y_top, character_y_bot, character_x_left, character_x_right,
+    input [11:0] server_inventory,
     input start_boil, // to start the animation
     input start_chop,
     input reset_boil, // to set back to IDLE state
@@ -83,7 +84,6 @@ module drawStations(
         .oled_data(oled_ingredients)
     );
 
-
     draw_boiler #(
         .BOILER_TOP_LEFT_X(BOILER_TOP_LEFT_X),
         .BOILER_TOP_LEFT_Y(BOILER_TOP_LEFT_Y)
@@ -110,8 +110,16 @@ module drawStations(
         .oled_data(oled_chop)
     );
     
-    draw_server #(.TOP_LEFT_X(SERVER_TOP_LEFT_X), .TOP_LEFT_Y(SERVER_TOP_LEFT_Y), .LENGTH(LENGTH), .WIDTH(WIDTH)) 
-    server_drawer_inst (.clk_25MHz(basys_clk), .x(x), .y(y), .oled_data(oled_server));
+    draw_server #(
+        .SERVER_TOP_LEFT_X(SERVER_TOP_LEFT_X),
+        .SERVER_TOP_LEFT_Y(SERVER_TOP_LEFT_Y)
+    ) draw_server0 (
+        .clk(basys_clk),
+        .x(x),
+        .y(y),
+        .server_inventory(server_inventory),
+        .oled_data(oled_server)
+    );
     
     assign oled_data =  oled_chop | oled_boil | oled_server | oled_ingredients;    
         
