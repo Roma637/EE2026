@@ -19,19 +19,16 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
-`timescale 1ns / 1ps
-
 module left_oled(
     input basys_clk,
     input [15:0] sw,
-    output [15:0] oled_data1,
     input [12:0] pixel_index1,
     input btnC,
-    input [11:0] inventory
-    //output reg [11:0] menu_1,//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
-    //output reg [11:0] menu_2,//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
-    //output reg [11:0] menu_3,//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
+    input [11:0] inventory,
+    output [15:0] oled_data1,
+    output reg [11:0] order_1,//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
+    output reg [11:0] order_2,//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
+    output reg [11:0] order_3//cannnot assign as if a port is defined in the top_level module, Verilog assumes it's trying to map to a physical pin
 );
 
 //    parameter basys3_clk_freq = 100_000_000;
@@ -45,33 +42,39 @@ module left_oled(
     wire [1:0] item_2;
     wire [1:0] item_3;
     
-    reg [11:0] menu_1;
-    reg [11:0] menu_2;
-    reg [11:0] menu_3;
+//    reg [11:0] menu_1;  // chicken rice, boiled chicken, boiled rice
+//    reg [11:0] menu_2; // boiled onion
+//    reg [11:0] menu_3;  // chopped tomato
     reg  random_initialised = 1'b0;
-    //UPDATE WITH THE PROPER 12-BIT DISH IDs
+//    //UPDATE WITH THE PROPER 12-BIT DISH IDs
+
+    parameter CHICKEN_RICE = 12'b011_000_001_000;
+    parameter ONION_SOUP = 12'b000_000_000_001;
+    parameter TOMATO_SOUP = 12'b000_001_000_000;
+    parameter TOMATO_RICE = 12'b000_001_001_000;
+    
     always @(*) begin
-            case (item_1)
-                2'b00: menu_1 = 12'b000_000_000_000;
-                2'b01: menu_1 = 12'b000_000_000_001;
-                2'b10: menu_1 = 12'b000_000_000_010;
-                2'b11: menu_1 = 12'b000_000_000_011;
-            endcase
-    
-            case (item_2)
-                2'b00: menu_2 = 12'b000_000_000_000;
-                2'b01: menu_2 = 12'b000_000_001_111;
-                2'b10: menu_2 = 12'b000_000_010_000;
-                2'b11: menu_2 = 12'b000_000_011_111;
-            endcase
-    
-            case (item_3)
-                2'b00: menu_3 = 12'b000_000_000_000;
-                2'b01: menu_3 = 12'b111_000_000_000;
-                2'b10: menu_3 = 12'b001_111_000_000;
-                2'b11: menu_3 = 12'b111_111_111_111;
-            endcase
-        end
+        case (item_1)
+            2'b00: order_1 = CHICKEN_RICE;
+            2'b01: order_1 = ONION_SOUP;
+            2'b10: order_1 = TOMATO_SOUP;
+            2'b11: order_1 = TOMATO_RICE;
+        endcase
+
+        case (item_2)
+            2'b00: order_2 = CHICKEN_RICE;
+            2'b01: order_2 = ONION_SOUP;
+            2'b10: order_2 = TOMATO_SOUP;
+            2'b11: order_2 = TOMATO_RICE;
+        endcase
+
+        case (item_3)
+            2'b00: order_3 = CHICKEN_RICE;
+            2'b01: order_3 = ONION_SOUP;
+            2'b10: order_3 = TOMATO_SOUP;
+            2'b11: order_3 = TOMATO_RICE;
+        endcase
+    end
     
     
 

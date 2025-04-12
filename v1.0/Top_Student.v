@@ -46,7 +46,7 @@ Oled_Display oled_unit_A (.clk(clk_6p25MHz),
                           .vccen(JB[6]),
                           .pmoden(JB[7]));
 
-wire [15:0] oled_data1;
+wire [15:0] left_oled;
 //wire clk_6p25MHz1;
 wire frame_begin1;
 wire [12:0] pixel_index1;
@@ -58,7 +58,7 @@ Oled_Display oled_unit_B (.clk(clk_6p25MHz),
                           .sending_pixels(sending_pixels1),
                           .sample_pixel(sample_pixel1),
                           .pixel_index(pixel_index1),
-                          .pixel_data(oled_data1),
+                          .pixel_data(left_oled),
                           .cs(JXADC[0]),
                           .sdin(JXADC[1]), 
                           .sclk(JXADC[3]),
@@ -78,6 +78,8 @@ wire [15:0] oled_map, oled_starting_screen;
 wire [7:0] seg_timer;
 wire [3:0] an_timer;
 wire [11:0] inventory;
+wire [11:0] order_1, order_2, order_3;
+wire [2:0] orders_done;
 map map0 (
     .basys_clk(basys_clk),
     .pixel_index(pixel_index),
@@ -88,11 +90,15 @@ map map0 (
     .btnL(btnL),
     .btnR(btnR),
     .start_game(start_game),
+    .order_1(order_1),
+    .order_2(order_2),
+    .order_3(order_3),
     .seg(seg_timer),
     .an(an_timer),
     .led(led),
     .oled_data(oled_map),
-    .inventory(inventory)
+    .inventory(inventory),
+    .orders_done(orders_done)
 );
 
 starting_screen(
@@ -103,16 +109,40 @@ starting_screen(
 
 left_oled left_display(
     .basys_clk(basys_clk),
-    .oled_data1(oled_data1),
+    .oled_data1(left_oled),
     .pixel_index1(pixel_index1),
     .sw(sw),
     .btnC(btnC),
-    .inventory(inventory)
+    .inventory(inventory),
+    .order_1(order_1),
+    .order_2(order_2),
+    .order_3(order_3)
 );
 
-assign oled_data = start_game ? oled_map : oled_starting_screen;
-assign seg = start_game ? seg_timer : 8'b1111_1111;
-assign an = start_game ? an_timer : 4'b1111;
+wire [7:0] seg_score;
+wire [3:0] an_score;
+wire game_end;
+assign game_end = (orders_done == 3'b111);
+display_scoring(
+    basys_clk,
+    orders_done, //One hot encoded, 1 in each bit if done
+    321, //Shouldn't exceed 16 bits - time unlikely to be so long
+    seg_score,
+    an_score
+);
+
+always @(*) begin
+    
+end
+
+assign oled_data = game_end ? 16'b0 :
+                   (start_game ? oled_map : oled_starting_screen);
+assign left_oled = game_end ? 16'b0 :
+                   (start_game ? oled_map : oled_starting_screen);
+assign seg = game_end ? seg_score :
+                   (start_game ? seg_timer : 8'b1111_1111);
+assign an = game_end ? an_score :
+                   (start_game ? an_timer : 4'b1111);
 
 endmodule
 

@@ -33,6 +33,9 @@ module ingredient_management(
     input isInServer,
     input boil_done, // to check if the boiling animation is complete
     input chop_done,
+    input [11:0] order_1, // each order generated that the player needs to complete
+    input [11:0] order_2,
+    input [11:0] order_3,
     output reg start_boil = 0, // to start the animation
     output reg start_chop = 0,
     output reg reset_boil = 0, // to set back to IDLE state
@@ -40,6 +43,7 @@ module ingredient_management(
     output reg [11:0] station_serve = 0,
     output reg reset_task_password_match = 1, // for muxxing the seg outside
     output reg reset_task_slot_machine = 1,
+    output [2:0] orders_done,
     output reg [7:0] seg, // for the tasks
     output reg [3:0] an,
     output reg [15:0] led,
@@ -58,6 +62,8 @@ module ingredient_management(
     
     wire clk_10Hz;
     flexible_clock clk0 (basys_clk, 5_000_000, clk_10Hz);
+    wire clk_5Hz;
+    flexible_clock clk2 (basys_clk, 10_000_000, clk_5Hz);
     
     // for testing 
     wire clk_0p5Hz;
@@ -107,13 +113,13 @@ module ingredient_management(
 //    assign seg = reset_task_password_match ? 8'b1111_1111 : seg_task_password_match;
 //    assign an = reset_task_password_match ? 4'b1111 : an_task_password_match;
     
-    wire [1:0] orders_done;
     wire served;
     //assign led[15:14] = orders_done;
-    wire [11:0] order1 = 12'b100_100_000_000;
-    wire [11:0] order2 = 12'b000_000_100_100;
-    wire [11:0] order3 = 12'b100_000_001_001;
-    server server0 (clk_10Hz, 0, order1, order2, order3, station_serve, after_serving, orders_done, served);
+//    wire [11:0] order1 = 12'b100_100_000_000;
+//    wire [11:0] order2 = 12'b000_000_100_100;
+//    wire [11:0] order3 = 12'b100_000_001_001;
+    // slower time to sense the order done to allow server_inventory to update first
+    server server0 (clk_5Hz, 0, order_1, order_2, order_3, station_serve, after_serving, orders_done, served);
     
     //assign led = reset_task_password_match ? {orders_done, 2'b00, inventory} : {led_task_password_match, 8'b0};
     
@@ -123,7 +129,7 @@ module ingredient_management(
         if (reset_task_password_match && reset_task_slot_machine) begin
             seg = 8'b1111_1111;
             an = 4'b1111;
-            led = {orders_done, 2'b00, inventory};
+            led = {orders_done, 1'b0, inventory};
         end 
         else if (!reset_task_password_match) begin
             seg = seg_task_password_match;
@@ -318,7 +324,7 @@ module server(
     input [11:0] order1, order2, order3,
     input [11:0] before_serving,
     output reg [11:0] after_serving = 0,
-    output reg [1:0] orders_done = 0,  // counts how many orders have been completed
+    output reg [2:0] orders_done = 0,  // counts how many orders have been completed
     output reg served = 0
 );
     // marks if the orders have been done before
@@ -329,7 +335,7 @@ module server(
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             after_serving <= 12'b0;
-            orders_done <= 2'd0;
+            orders_done <= 0;
             done1 <= 0;
             done2 <= 0;
             done3 <= 0;
@@ -341,19 +347,19 @@ module server(
             if (((before_serving & order1) == order1) && !done1) begin
                 after_serving <= before_serving & ~order1;
                 done1 <= 1;
-                orders_done <= orders_done + 1;
+                orders_done[2] <= 1;
                 served <= 1; // pulse high for 1 clock
             end
             else if (((before_serving & order2) == order2) && !done2) begin
                 after_serving <= before_serving & ~order2;
                 done2 <= 1;
-                orders_done <= orders_done + 1;
+                orders_done[1] <= 1;
                 served <= 1;
             end
             else if (((before_serving & order3) == order3) && !done3) begin
                 after_serving <= before_serving & ~order3;
                 done3 <= 1;
-                orders_done <= orders_done + 1;
+                orders_done[0] <= 1;
                 served <= 1;
             end 
             else begin

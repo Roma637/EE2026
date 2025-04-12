@@ -30,11 +30,15 @@ module map(
     input btnR,
     input btnC,
     input start_game, // like the reset for this module
+    input [11:0] order_1,
+    input [11:0] order_2,
+    input [11:0] order_3,
     output [7:0] seg, 
     output [3:0] an,
     output [15:0] led,
     output [15:0] oled_data,
-    output [11:0] inventory
+    output [11:0] inventory,
+    output [2:0] orders_done
     );
     
     wire [6:0] x;
@@ -199,6 +203,9 @@ module map(
         .isInServer(isInServer),
         .boil_done(boil_done), // to check if the boiling animation is complete
         .chop_done(chop_done),
+        .order_1(order_1),
+        .order_2(order_2),
+        .order_3(order_3),
         .start_boil(start_boil), // to start the animation
         .start_chop(start_chop),
         .reset_boil(reset_boil), // to set back to IDLE state
@@ -206,6 +213,7 @@ module map(
         .station_serve(server_inventory),
         .reset_task_password_match(reset_task_password_match),
         .reset_task_slot_machine(reset_task_slot_machine),
+        .orders_done(orders_done),
         .seg(seg_tasks),
         .an(an_tasks),
         .led(led),
