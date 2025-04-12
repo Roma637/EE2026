@@ -107,9 +107,10 @@ starting_screen(
     oled_starting_screen
 );
 
+wire [15:0] oled_menu;
 left_oled left_display(
     .basys_clk(basys_clk),
-    .oled_data1(left_oled),
+    .oled_data1(oled_menu),
     .pixel_index1(pixel_index1),
     .sw(sw),
     .btnC(btnC),
@@ -138,7 +139,7 @@ end
 assign oled_data = game_end ? 16'b0 :
                    (start_game ? oled_map : oled_starting_screen);
 assign left_oled = game_end ? 16'b0 :
-                   (start_game ? oled_map : oled_starting_screen);
+                   (start_game ? oled_menu : oled_starting_screen);
 assign seg = game_end ? seg_score :
                    (start_game ? seg_timer : 8'b1111_1111);
 assign an = game_end ? an_score :

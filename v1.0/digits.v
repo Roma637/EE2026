@@ -21,7 +21,7 @@
 
 
 module digits(
-    input digits_clk,
+    input basys_clk,
     input reset,
     input [15:0] total_seconds,
     output reg [3:0] tenth,
@@ -35,7 +35,9 @@ module digits(
     parameter START = 2'b01;
     parameter END = 2'b10;
     
+    wire clk_10Hz;
     reg [1:0] state;
+    flexible_clock mod0(basys_clk, 5_000_000, clk_10Hz); //10Hz clock for digit countdown starting in tenths
     
     wire [5:0] initial_min, initial_tensec, initial_sec, initial_tenth;
     
@@ -47,7 +49,7 @@ module digits(
         .tenth(initial_tenth)      
         ); 
     
-    always @(posedge digits_clk or posedge reset) begin
+    always @(posedge clk_10Hz or posedge reset) begin
             if (reset) begin
                 state <= REST;
             end else begin
@@ -129,3 +131,5 @@ always @(*) begin
 end
 
 endmodule
+
+
