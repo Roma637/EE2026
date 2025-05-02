@@ -35,3 +35,6 @@ The entire game logic runs on the Basys 3 FPGA. Players navigate a four-quadrant
 5.  **Objective:** Serve as many orders as possible before time expires! Aim for that high score!
 
 ## Demo Video
+[![]
+(https://img.youtube.com/vi/O5UnHBDp72E/0.jpg)]
+(https://www.youtube.com/watch?v=O5UnHBDp72E)
